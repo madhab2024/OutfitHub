@@ -10,6 +10,7 @@ import { WishlistPage } from './pages/WishlistPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { CheckoutPage } from './pages/CheckoutPage.jsx'
 import { ShippingAddressesPage } from './pages/ShippingAddressesPage.jsx'
+import { ProductDetailsPage } from './pages/ProductDetailsPage.jsx'
 import { supabase } from './lib/supabase.js'
 
 const ProtectedRoute = ({ session, children }) => {
@@ -65,6 +66,7 @@ function App() {
       '/profile/addresses': 'OutfitHub | Shipping Addresses',
       '/login': 'OutfitHub | Login',
       '/signup': 'OutfitHub | Signup',
+      '/product': 'OutfitHub | Product Details',
     }
 
     document.title = titles[location.pathname] || 'OutfitHub | Clothing Marketplace'
@@ -86,6 +88,14 @@ function App() {
 
   return (
     <Routes>
+      <Route
+        path="/product/:id"
+        element={
+          <ProtectedRoute session={session}>
+            <ProductDetailsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/signup" element={session ? <Navigate to="/" replace /> : <SignupPage />} />
 
