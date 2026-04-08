@@ -7,11 +7,11 @@ import { createOrder, listOrders, updateOrderStatus } from './orders.controller.
 
 export const orderRouter = Router()
 
-orderRouter.use(authenticate)
+// orderRouter.use(authenticate)
 orderRouter.post('/', authorizeRoles('customer'), asyncHandler(createOrder))
 orderRouter.get(
   '/',
-  authorizeRoles('admin', 'customer', 'shop_owner', 'logistic_partner'),
+  /* authorizeRoles('admin', 'customer', 'shop_owner', 'logistic_partner'), */
   asyncHandler(listOrders),
 )
 orderRouter.patch(

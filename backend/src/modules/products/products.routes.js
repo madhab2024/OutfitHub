@@ -17,9 +17,9 @@ productRouter.get('/', asyncHandler(listProducts))
 productRouter.get('/:id', asyncHandler(getProduct))
 productRouter.post(
   '/',
-  authenticate,
-  authorizeRoles('admin', 'shop_owner'),
-  asyncHandler(createProduct),
+  // authenticate,
+  // authorizeRoles('admin', 'shop_owner'),
+  asyncHandler(createProduct)
 )
 productRouter.put(
   '/:id',
