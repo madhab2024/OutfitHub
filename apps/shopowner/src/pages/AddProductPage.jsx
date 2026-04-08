@@ -15,6 +15,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey)
 function AddProductPage() {
   const [activeTab, setActiveTab] = useState('manual')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [feedback, setFeedback] = useState({ type: '', message: '' })
   const [selectedFiles, setSelectedFiles] = useState([])
   const [formData, setFormData] = useState({
@@ -34,6 +35,44 @@ function AddProductPage() {
   const handleFileChange = (e) => {
     if (e.target.files) {
       setSelectedFiles(Array.from(e.target.files))
+    }
+  }
+
+  const handleGenerateDescription = async () => {
+    if (!formData.name || !formData.category || !formData.price) {
+      setFeedback({ type: 'error', message: 'Please enter Name, Category, and Price to generate a description.' })
+      setTimeout(() => setFeedback({ type: '', message: '' }), 4000)
+      return
+    }
+
+    setIsGeneratingAi(true)
+    setFeedback({ type: '', message: 'Generating AI description...' })
+
+    try {
+      const response = await fetch('http://localhost:4000/api/products/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          category: formData.category,
+          style: formData.style,
+          size: formData.size,
+          price: `$${formData.price}`
+        })
+      })
+
+      const data = await response.json()
+      if (data.success && data.data && data.data.description) {
+        setFormData(prev => ({ ...prev, description: data.data.description }))
+        setFeedback({ type: 'success', message: 'AI Description generated successfully!' })
+      } else {
+        throw new Error('Failed to generate description from server')
+      }
+    } catch (err) {
+      setFeedback({ type: 'error', message: err.message })
+    } finally {
+      setIsGeneratingAi(false)
+      setTimeout(() => setFeedback({ type: '', message: '' }), 4000)
     }
   }
 
@@ -213,8 +252,18 @@ function AddProductPage() {
                      <input type="number" name="stock_quantity" value={formData.stock_quantity} onChange={handleChange} placeholder="Quantity" style={{padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px'}} required />
                   </div>
                   <div className="form-group" style={{marginBottom: '1rem', display: 'flex', flexDirection: 'column'}}>
-                    <label style={{marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem'}}>Description</label>
-                    <textarea name="description" value={formData.description} onChange={handleChange} rows="4" placeholder="Enter full product details..." style={{padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit'}}></textarea>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem'}}>
+                      <label style={{fontWeight: 500, fontSize: '0.875rem'}}>Description</label>
+                      <button 
+                         type="button" 
+                         onClick={handleGenerateDescription} 
+                         disabled={isGeneratingAi}
+                         style={{display: 'flex', alignItems: 'center', gap: '0.4rem', background: 'none', border: '1px solid #1e3a8a', color: '#1e3a8a', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: isGeneratingAi ? 'not-allowed' : 'pointer', opacity: isGeneratingAi ? 0.6 : 1}}
+                      >
+                         <Sparkles size={14} /> {isGeneratingAi ? 'Generating...' : 'Auto-Generate with AI'}
+                      </button>
+                    </div>
+                    <textarea name="description" value={formData.description} onChange={handleChange} rows="4" placeholder="Enter full product details or auto-generate..." style={{padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '8px', fontFamily: 'inherit'}}></textarea>
                   </div>
                   <div className="form-group" style={{marginTop: '1.5rem', display: 'flex', flexDirection: 'column'}}>
                     <label style={{marginBottom: '0.5rem', fontWeight: 500, fontSize: '0.875rem'}}>Product Images</label>

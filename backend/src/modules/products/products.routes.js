@@ -9,12 +9,14 @@ import {
   getProduct,
   listProducts,
   updateProduct,
+  generateAiDescription,
 } from './products.controller.js'
 
 export const productRouter = Router()
 
 productRouter.get('/', asyncHandler(listProducts))
 productRouter.get('/:id', asyncHandler(getProduct))
+productRouter.post('/generate-description', asyncHandler(generateAiDescription))
 productRouter.post(
   '/',
   // authenticate,
