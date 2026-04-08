@@ -139,6 +139,7 @@ export const ProfilePage = ({ session, onLogout }) => {
                   icon={MapPin} 
                   label="Shipping Addresses" 
                   description="Manage addresses for fast checkout" 
+                  onClick={() => navigate('/profile/addresses')}
                 />
                 <ActionLink 
                   icon={CreditCard} 

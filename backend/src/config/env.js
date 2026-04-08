@@ -10,6 +10,8 @@ export const env = {
   supabaseAnonKey: process.env.SUPABASE_ANON_KEY,
   supabaseServiceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  razorpayKeyId: process.env.RAZORPAY_KEY_ID,
+  razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
 }
 
 export const validateEnv = () => {
@@ -17,6 +19,8 @@ export const validateEnv = () => {
     'supabaseUrl',
     'supabaseAnonKey',
     'supabaseServiceRoleKey',
+    'razorpayKeyId',
+    'razorpayKeySecret',
   ]
 
   const missing = requiredKeys.filter((key) => !env[key])

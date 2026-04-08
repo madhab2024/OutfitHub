@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
+import axios from 'axios'
 import { 
   ArrowLeft, 
   MapPin, 
@@ -11,23 +12,37 @@ import {
   Navigation,
   CheckCircle2,
   Calendar,
-  Truck
+  Truck,
+  Plus,
+  Phone
 } from 'lucide-react'
 import { Navbar } from '../components/plp/Navbar'
 import { clearCart } from '../store/cartSlice'
 import { AddressMapPicker } from '../components/checkout/AddressMapPicker'
 
 const formatCurrency = (value) => `₹${value.toLocaleString('en-IN')}`
+const BACKEND_URL = 'http://localhost:4000/api'
+const RAZORPAY_KEY_ID = 'rzp_test_Sb5EubbfrJ5dGF'
 
-export const CheckoutPage = () => {
+export const CheckoutPage = ({ session }) => {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const cartItems = useSelector((state) => state.cart.cartItems)
   const catalog = useSelector((state) => state.catalog.items)
   const [isProcessing, setIsProcessing] = useState(false)
   const [orderComplete, setOrderComplete] = useState(false)
-  const [address, setAddress] = useState('123 Fashion Street, Cyber City, Bangalore, 560001')
-  const [isMapOpen, setIsMapOpen] = useState(false)
+  const { addresses } = useSelector((state) => state.address)
+  const [showAddressList, setShowAddressList] = useState(false)
+  
+  const defaultAddr = useMemo(() => 
+    addresses.find(a => a.isDefault) || addresses[0], 
+  [addresses])
+
+  const [selectedAddressId, setSelectedAddressId] = useState(defaultAddr?.id || '')
+
+  const selectedAddress = useMemo(() => 
+    addresses.find(a => a.id === selectedAddressId) || defaultAddr,
+  [addresses, selectedAddressId, defaultAddr])
   
   const fullCartItems = cartItems.map((cartItem) => {
     const product = catalog.find((p) => p.id === cartItem.id)
@@ -46,14 +61,77 @@ export const CheckoutPage = () => {
     return date.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })
   }, [])
 
-  const handlePlaceOrder = () => {
-    setIsProcessing(true)
-    setTimeout(() => {
-      setIsProcessing(false)
-      setOrderComplete(true)
-      dispatch(clearCart())
-    }, 2000)
-  }
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      alert('Please select a delivery address');
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // 1. Create order on backend
+      const { data: orderData } = await axios.post(`${BACKEND_URL}/payments/create-order`, {
+        amount: Math.round(totalAmount),
+        receipt: `receipt_${Date.now()}`
+      });
+
+      const order = orderData.data;
+
+      // 2. Open Razorpay Checkout
+      const options = {
+        key: RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: 'OutfitHub',
+        description: 'Quality Fashion Marketplace',
+        order_id: order.id,
+        handler: async (response) => {
+          try {
+            // 3. Verify payment on backend
+            const { data: verifyData } = await axios.post(`${BACKEND_URL}/payments/verify-payment`, {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            if (verifyData.success) {
+              setOrderComplete(true);
+              dispatch(clearCart());
+            } else {
+              alert('Payment verification failed');
+            }
+          } catch (error) {
+            console.error('Verification error:', error);
+            alert('Something went wrong during payment verification');
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          email: session?.user?.email,
+          contact: selectedAddress?.phone
+        },
+        theme: {
+          color: '#0066FF'
+        },
+        modal: {
+          ondismiss: () => {
+             setIsProcessing(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+
+    } catch (error) {
+      console.error('Payment initialization error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
+      alert(`Failed to initialize payment: ${errorMessage}`);
+      setIsProcessing(false);
+    }
+  };
 
   if (orderComplete) {
     return (
@@ -102,33 +180,69 @@ export const CheckoutPage = () => {
         <div className="grid gap-8 lg:grid-cols-[1fr_400px]">
           <div className="space-y-6">
             {/* Delivery Address Section */}
-            <section className="rounded-[32px] bg-white p-8 shadow-sm">
+            <section className="rounded-[32px] bg-white p-8 shadow-sm relative">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-[#0066FF]">
                     <MapPin size={20} />
                   </div>
-                  <h2 className="text-xl font-black text-slate-900">Delivery Address</h2>
+                  <h2 className="text-xl font-black text-slate-900">Delivery Details</h2>
                 </div>
                 <button 
                   className="text-xs font-black uppercase tracking-widest text-[#0066FF] hover:underline"
-                  onClick={() => setIsMapOpen(true)}
+                  onClick={() => setShowAddressList(!showAddressList)}
                 >
-                  Change
+                  {showAddressList ? 'Close' : 'Change'}
                 </button>
               </div>
-              
-              <div className="flex items-start gap-4 rounded-3xl border-2 border-slate-100 bg-slate-50 p-5">
-                <div className="mt-1 hidden sm:block">
-                  <div className="rounded-full bg-slate-200 p-2 text-slate-500">
-                    <Navigation size={18} />
+
+              {showAddressList ? (
+                <div className="grid gap-4 mb-6">
+                  {addresses.map(addr => (
+                    <button
+                      key={addr.id}
+                      onClick={() => {
+                        setSelectedAddressId(addr.id);
+                        setShowAddressList(false);
+                      }}
+                      className={`text-left p-4 rounded-2xl border-2 transition-all ${selectedAddressId === addr.id ? 'border-[#0066FF] bg-blue-50' : 'border-slate-100 hover:border-slate-200'}`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-bold text-slate-900">{addr.receiverName}</span>
+                        <span className="text-[10px] font-black uppercase bg-white px-2 py-0.5 rounded border border-slate-100">{addr.label}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 truncate">{addr.houseName}, {addr.address}</p>
+                    </button>
+                  ))}
+                  <Link 
+                    to="/profile/addresses"
+                    className="flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-slate-200 text-slate-500 text-sm font-bold hover:bg-slate-50 transition-colors"
+                  >
+                    <Plus size={16} />
+                    Add New Address
+                  </Link>
+                </div>
+              ) : (
+                <div className="flex items-start gap-4 rounded-3xl border-2 border-slate-100 bg-slate-50 p-6">
+                  <div className="mt-1 hidden sm:block">
+                    <div className="rounded-full bg-white p-3 text-[#0066FF] shadow-sm">
+                      <Navigation size={20} />
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                       <p className="font-black text-slate-900">{selectedAddress?.receiverName || 'No address set'}</p>
+                       <span className="text-[10px] font-black uppercase tracking-widest bg-slate-900 text-white px-2 py-0.5 rounded-md">{selectedAddress?.label}</span>
+                    </div>
+                    <p className="text-sm font-bold text-slate-900">{selectedAddress?.houseName}</p>
+                    <p className="mt-1 text-sm text-slate-500 leading-relaxed truncate">{selectedAddress?.address}</p>
+                    <div className="mt-3 flex items-center gap-2 text-xs font-bold text-slate-400">
+                      <Phone size={12} />
+                      {selectedAddress?.phone}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <p className="font-bold text-slate-900">Current Location</p>
-                  <p className="mt-1 text-sm text-slate-500 leading-relaxed">{address}</p>
-                </div>
-              </div>
+              )}
               
               <div className="mt-6 flex items-center gap-4 text-sm text-slate-600">
                 <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-1 font-bold text-amber-600">
@@ -232,15 +346,6 @@ export const CheckoutPage = () => {
         </div>
       </main>
 
-      <AddressMapPicker 
-        isOpen={isMapOpen}
-        onClose={() => setIsMapOpen(false)}
-        initialAddress={address}
-        onConfirm={(newAddress) => {
-          setAddress(newAddress)
-          setIsMapOpen(false)
-        }}
-      />
     </div>
   )
 }

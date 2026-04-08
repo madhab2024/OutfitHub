@@ -9,6 +9,7 @@ import { userRouter } from './modules/users/users.routes.js'
 import { productRouter } from './modules/products/products.routes.js'
 import { orderRouter } from './modules/orders/orders.routes.js'
 import { deliveryRouter } from './modules/delivery/delivery.routes.js'
+import { paymentRouter } from './modules/payments/payments.routes.js'
 import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.js'
 
 export const app = express()
@@ -27,6 +28,7 @@ app.use(`${env.apiPrefix}/users`, userRouter)
 app.use(`${env.apiPrefix}/products`, productRouter)
 app.use(`${env.apiPrefix}/orders`, orderRouter)
 app.use(`${env.apiPrefix}/delivery`, deliveryRouter)
+app.use(`${env.apiPrefix}/payments`, paymentRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

@@ -9,6 +9,7 @@ import { SignupPage } from './pages/SignupPage.jsx'
 import { WishlistPage } from './pages/WishlistPage.jsx'
 import { ProfilePage } from './pages/ProfilePage.jsx'
 import { CheckoutPage } from './pages/CheckoutPage.jsx'
+import { ShippingAddressesPage } from './pages/ShippingAddressesPage.jsx'
 import { supabase } from './lib/supabase.js'
 
 const ProtectedRoute = ({ session, children }) => {
@@ -61,6 +62,7 @@ function App() {
       '/profile': 'OutfitHub | Profile',
       '/checkout': 'OutfitHub | Checkout',
       '/orders': 'OutfitHub | Orders',
+      '/profile/addresses': 'OutfitHub | Shipping Addresses',
       '/login': 'OutfitHub | Login',
       '/signup': 'OutfitHub | Signup',
     }
@@ -123,7 +125,15 @@ function App() {
         path="/checkout"
         element={
           <ProtectedRoute session={session}>
-            <CheckoutPage />
+            <CheckoutPage session={session} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile/addresses"
+        element={
+          <ProtectedRoute session={session}>
+            <ShippingAddressesPage />
           </ProtectedRoute>
         }
       />
