@@ -22,6 +22,7 @@ export const ProductGrid = ({
   wishlist,
   onToggleWishlist,
   onAddToCart,
+  onBookNow,
 }) => {
   if (loading) {
     return (
@@ -52,6 +53,7 @@ export const ProductGrid = ({
             isWishlisted={wishlist.has(product.id)}
             onToggleWishlist={onToggleWishlist}
             onAddToCart={onAddToCart}
+            onBookNow={onBookNow}
           />
         ))}
       </div>

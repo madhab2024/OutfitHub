@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faArrowRight,
@@ -14,6 +15,7 @@ import { CategoryBar } from '../components/plp/CategoryBar'
 import { FilterSidebar } from '../components/plp/FilterSidebar'
 import { Navbar } from '../components/plp/Navbar'
 import { ProductGrid } from '../components/plp/ProductGrid'
+import { ProductCard } from '../components/plp/ProductCard'
 import { SortBar } from '../components/plp/SortBar'
 import { categories } from '../data/categories'
 import { addToCart, toggleWishlist } from '../store/cartSlice'
@@ -33,8 +35,6 @@ import {
   toggleSize,
 } from '../store/uiSlice'
 
-const pageSize = 8
-
 const formatCurrency = (value) => `₹${value.toLocaleString('en-IN')}`
 
 const categoryPromos = [
@@ -43,8 +43,9 @@ const categoryPromos = [
   { title: 'Easy Returns', subtitle: 'Simple exchanges & secure checkout', icon: faShieldHeart },
 ]
 
-export const ShopPage = () => {
+export const ShopPage = ({ session, onLogout }) => {
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   const catalog = useSelector((state) => state.catalog.items)
   const status = useSelector((state) => state.catalog.status)
   const selectedCategory = useSelector((state) => state.ui.selectedCategory)
@@ -128,9 +129,20 @@ export const ShopPage = () => {
     return [...catalog].sort((a, b) => b.popularity - a.popularity).slice(0, 10)
   }, [catalog])
 
+  const handleBookNow = (productId) => {
+    dispatch(addToCart(productId))
+    navigate('/cart')
+  }
+
   return (
     <div className="min-h-screen bg-slate-100">
-      <Navbar search={search} onSearchChange={(value) => dispatch(setSearch(value))} cartCount={cartItems.length} />
+      <Navbar
+        search={search}
+        onSearchChange={(value) => dispatch(setSearch(value))}
+        cartCount={cartItems.length}
+        userEmail={session?.user?.email}
+        onLogout={onLogout}
+      />
       <CategoryBar
         categories={categories}
         activeCategory={selectedCategory}
@@ -298,44 +310,16 @@ export const ShopPage = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {trendingProducts.map((product) => {
-                  const discountPercent = Math.round(
-                    ((product.originalPrice - product.price) / product.originalPrice) * 100,
-                  )
-
-                  return (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => dispatch(setSelectedCategory(product.category))}
-                      className="group overflow-hidden rounded-2xl border border-slate-200 bg-white text-left transition hover:-translate-y-0.5 hover:shadow-md"
-                    >
-                      <div className="relative overflow-hidden">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          loading="lazy"
-                          className="h-48 w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                        <span className="absolute left-2 top-2 rounded-md bg-amber-400 px-2 py-1 text-[11px] font-bold text-slate-900">
-                          Trending
-                        </span>
-                      </div>
-                      <div className="p-3">
-                        <p className="line-clamp-1 text-sm font-semibold text-slate-900">{product.name}</p>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-amber-500">
-                          <FontAwesomeIcon icon={faStar} className="h-3 w-3" />
-                          <span className="font-semibold text-slate-700">{product.rating}</span>
-                        </div>
-                        <div className="mt-2 flex items-center gap-2">
-                          <span className="text-base font-black text-slate-900">{formatCurrency(product.price)}</span>
-                          <span className="text-xs text-slate-400 line-through">{formatCurrency(product.originalPrice)}</span>
-                        </div>
-                        <p className="mt-1 text-xs font-bold text-rose-600">Save {discountPercent}%</p>
-                      </div>
-                    </button>
-                  )
-                })}
+                {trendingProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    isWishlisted={wishlistItems.includes(product.id)}
+                    onToggleWishlist={(id) => dispatch(toggleWishlist(id))}
+                    onAddToCart={(id) => dispatch(addToCart(id))}
+                    onBookNow={handleBookNow}
+                  />
+                ))}
               </div>
             </section>
           </>
@@ -389,6 +373,7 @@ export const ShopPage = () => {
                 wishlist={new Set(wishlistItems)}
                 onToggleWishlist={(productId) => dispatch(toggleWishlist(productId))}
                 onAddToCart={(productId) => dispatch(addToCart(productId))}
+                onBookNow={handleBookNow}
               />
             </section>
           </div>
@@ -396,4 +381,4 @@ export const ShopPage = () => {
       </main>
     </div>
   )
-}
+}
