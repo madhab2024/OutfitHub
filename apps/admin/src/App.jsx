@@ -1,4 +1,5 @@
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 
 import { DashboardPage } from './pages/DashboardPage.jsx'
 import { ProductsPage } from './pages/ProductsPage.jsx'
@@ -10,11 +11,23 @@ const navClassName = ({ isActive }) =>
   }`
 
 function App() {
+  const location = useLocation()
+
+  useEffect(() => {
+    const titles = {
+      '/': 'OutfitHub Admin | Dashboard',
+      '/products': 'OutfitHub Admin | Products',
+      '/orders': 'OutfitHub Admin | Orders',
+    }
+
+    document.title = titles[location.pathname] || 'OutfitHub Admin'
+  }, [location.pathname])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-100 via-orange-50 to-rose-100">
       <div className="mx-auto max-w-6xl p-6 sm:p-10">
         <header className="mb-8 rounded-3xl border border-white/50 bg-white/70 p-6 shadow-xl backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Admin Portal</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">OutfitHub Admin</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
             Multi-Vendor Clothing Control Center
           </h1>
