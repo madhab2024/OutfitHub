@@ -1,0 +1,21 @@
+{
+  "name": "@platform/shared",
+  "version": "1.0.0",
+  "description": "Shared Supabase and utility helpers",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./supabase": "./src/supabase.js",
+    "./utils": "./src/utils.js"
+  },
+  "scripts": {
+    "build": "echo \"Shared package is plain ESM - no build needed\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.0"
+  }
+}
